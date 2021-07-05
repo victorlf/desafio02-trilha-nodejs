@@ -10,19 +10,69 @@ app.use(cors());
 const users = [];
 
 function checksExistsUserAccount(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const user = users.find((user) => user.username === username);
+
+  if (!user) {
+    return response.status(404).json({ error: 'Username doesn\'t exist' });
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 function checksCreateTodosUserAvailability(request, response, next) {
-  // Complete aqui
+  const { user } = request;
+
+  if (!user.pro && (user.todos.length >= 10)) {
+    return response.status(403).json({ error: 'User is not allowed to create more todo. Upgrade to a Pro account.' });
+  }
+
+  return next();
+
 }
 
 function checksTodoExists(request, response, next) {
-  // Complete aqui
+  const { username } = request.headers;
+  const { id } = request.params;
+
+  const user = users.find((user) => user.username === username);
+
+  if (!user) {
+    return response.status(404).json({ error: 'User doesn\'t exist!' });
+  }
+
+  const isUuid = validate(id, 4);
+
+  if (!isUuid) {
+    return response.status(400).json({ error: 'Is not a valid ID!' });
+  }
+
+  const todo = user.todos.find((todo) => todo.id === id);
+
+  if (!todo) {
+    return response.status(404).json({ error: 'User doesn\'t have this TODO!' });
+  }
+
+  request.user = user;
+  request.todo = todo;
+
+  return next();
 }
 
 function findUserById(request, response, next) {
-  // Complete aqui
+  const { id } = request.params;
+
+  const user = users.find((user) => user.id === id);
+
+  if (!user) {
+    return response.status(404).json({ error: 'User doesn\'t exist!' });
+  }
+
+  request.user = user;
+
+  return next();
 }
 
 app.post('/users', (request, response) => {
@@ -31,7 +81,7 @@ app.post('/users', (request, response) => {
   const usernameAlreadyExists = users.some((user) => user.username === username);
 
   if (usernameAlreadyExists) {
-    return response.status(400).json({ error: 'Username already exists' });
+    return response.status(400).json({ error: 'Username already exists!' });
   }
 
   const user = {
